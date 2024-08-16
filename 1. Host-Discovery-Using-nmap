@@ -1,0 +1,126 @@
+# Nmap-tryhackme
+
+https://tryhackme.com/r/room/nmap01?ref=blog.tryhackme.com
+
+nmap  10.0.0.0/24   ——> scan complete subnet
+
+namp 10.0.0.11-15  ——→scan range from 10.0.0.11  to 10.0.0.15
+
+namp 10.1.1.10  [example.com](http://example.com)  [abc.com](http://abc.com)   —-.scan all three provided host
+
+nmap  -iL   <list-of-host-file.txt>   ——> scan list of IP from the file
+
+nmap -sL TARGETS     ——> Will give the list of host that nmap is going to scan.  {Will do reverse DNS lookup }
+
+1. When a *privileged* user tries to scan targets on a local network (Ethernet), Nmap uses *ARP requests*. A privileged user is **`root`** or a user who belongs to **`sudoers`** and can run **`sudo`**.
+2. When a *privileged* user tries to scan targets outside the local network, Nmap uses ICMP echo requests, TCP ACK (Acknowledge) to port 80, TCP SYN (Synchronize) to port 443, and ICMP timestamp request.
+3. When an *unprivileged* user tries to scan targets outside the local network, Nmap resorts to a TCP 3-way handshake by sending SYN packets to ports 80 and 443.
+
+ARP Scan :-
+
+nmap  -**PR -sn TARGETS      ==⇒  -PR is for ARP scan.  -sn  ,means without port scanning.**
+
+We can also use arp-scan tool:
+
+**apt install arp-scan    ——>Install this tool**
+
+**arp-scan -l**
+
+**sudo arp-scan -I eth0 -l   ——>send ARP req to all valid IP connected to eth0    {-I eth0   means interface eth0}**
+
+Ping scan :-
+
+1. namp  -PE  -sn    <host>     ===⇒  -PE for ping scan   -sn for not allowing to follow portt scan after ping scan.
+    
+    >>>>If subnet/host is in same network it willl confirm if host is up on basis of ARP response
+    
+2. ICMP Timestamp scan —→ If subnet/host  is in different N/W, it will try to find if host is up or not on basis of echo reply for ping.
+    
+    >>ICMP timestamp  (ICMP type 13) request is used by nmap if ping is blocked to check if host is up or not on basis of timestamp reply  (ICMP type 14).
+    
+    >>>>**nmap -PP -sn MACHINE_IP/24** 
+    
+3. ICMP Address Mask Queries (ICMP type 17  and reply ICMP type 18) :
+    
+    >>>**`nmap -PM -sn MACHINE_IP/24`**
+    
+
+#TCP Syn Ping :-
+
+>>send a packet with the SYN  flag set to a TCP port-80 by default.
+
+>>An open port should reply with a SYN/ACK & a closed port would result in an RST.
+
+>> If we get any response it means host is up.
+
+>> nmap  - PS 80, 443, 550    ——> {Will send SYN to port 80, 443 and 550}
+
+>>Privileged users (root and sudoers) can send TCP SYN packets and don’t need to complete the TCP 3-way handshake even if the port is open
+
+>>Unprivileged users have no choice but to complete the 3-way handshake if the port is open.
+
+>>**nmap -PS -sn MACHINE_IP/24    {If we dont specify port — it will take common port 80 }**
+
+#TCP  ACK Ping :-
+
+>>sends a packet with an ACK flag set
+
+>> nmap must be run in privileged mode. If we attempt this in non-privilege mode it will attempt for 3-WAY handshake.
+
+>>Any packet going with ACK flag set, server will respond with RST flag set because this ACK is not part of any connection.
+
+>> If RST reply comes means host is up.
+
+>>**sudo nmap -PA -sn MACHINE_IP/24**
+
+UDP  Ping :-
+
+>>sending UDP to any open port will not get any reply, however if we send a UDP packet to a closed UDP port, we expect to get an ICMP port unreachable packet.
+
+>> By this how host is up is confirmed.
+
+>>**sudo nmap -PU -sn 10.10.68.220/24**
+
+Alternative :- [ Masscan] :
+
+>> masscan is more aggressive in rate of packet it generates.
+
+>>install —**apt install masscan**
+
+- **`masscan MACHINE_IP/24 -p443`**
+- **`masscan MACHINE_IP/24 -p80,443`**
+- **`masscan MACHINE_IP/24 -p22-25`**
+- **`masscan MACHINE_IP/24 ‐‐top-ports 100`**
+
+Reverse DNS-Query :-
+
+>>By default nmap uses reverse DNS to get hostname.
+
+>>To skip this reverse-DNS  ==⇒ use nmap with  ( -n ) option.
+
+>> By default reverse-DNS is done for online host only , To do for offline as well   (-R) is used.
+
+>>**--dns-servers DNS_SERVER  ——> To use specific DNS server to query.**
+
+Summary :-
+
+You have learned how ARP, ICMP, TCP, and UDP can detect live hosts by completing this room. Any response from a host is an indication that it is online. Below is a quick summary of the command-line options for Nmap that we have covered.
+
+| Scan Type | Example Command |
+| --- | --- |
+| ARP Scan                 | sudo nmap -PR -sn MACHINE_IP/24 |
+| ICMP Echo Scan           | sudo nmap -PE -sn MACHINE_IP/24 |
+| ICMP Timestamp Scan      | sudo nmap -PP -sn MACHINE_IP/24 |
+| ICMP Address Mask Scan   | sudo nmap -PM -sn MACHINE_IP/24 |
+| TCP SYN Ping Scan        | sudo nmap -PS22,80,443 -sn MACHINE_IP/30 |
+| TCP ACK Ping Scan        | sudo nmap -PA22,80,443 -sn MACHINE_IP/30 |
+| UDP Ping Scan            | sudo nmap -PU53,161,162 -sn MACHINE_IP/30 |
+
+Remember to add **`-sn`** if you are only interested in host discovery without port-scanning. Omitting **`-sn`** will let Nmap default to port-scanning the live hosts.
+----------------------------------------------------------------------
+| Option               |       Purpose                             |
+-------------------------------------------------------------------|
+| -n                   |       no DNS lookup                       |
+| -R                   |       reverse-DNS lookup for all hosts    |
+| -sn                  |       Host Discovery only                 |
+---------------------------------------------------------------------
